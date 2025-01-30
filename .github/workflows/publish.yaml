@@ -64,26 +64,30 @@ jobs:
       - name: Get latest tag
         id: get_latest_tag
         run: |
-            git fetch --tags
-            latest_tag=$(git tag --sort=-v:refname | head -n 1)
-            echo "Latest tag: $latest_tag"
-            echo "latest_tag=${latest_tag:-none}" >> $GITHUB_ENV  # Default to 'none' if no tags exist
+          git fetch --tags
+          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          if [ -z "$latest_tag" ]; then
+          echo "No tags found. Setting latest_tag to none."
+          latest_tag="none"
+          fi
+          echo "Latest tag: $latest_tag"
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+          
+          - name: Increment tag
+            id: increment_tag
+            run: |
+              if [ "$latest_tag" == "none" ]; then
+                new_tag="v1.0.0"
+              else
+                new_tag=$(echo "$latest_tag" | awk -F. -v OFS=. '{$NF++;print}')
+              fi
+              echo "New tag: $new_tag"
+              echo "new_tag=$new_tag" >> $GITHUB_ENV
 
-            - name: Increment tag
-              id: increment_tag
-              run: |
-                if [ "$latest_tag" == "none" ]; then
-                  new_tag="v1.0.0"
-                else
-                  new_tag=$(echo "$latest_tag" | awk -F. -v OFS=. '{$NF++;print}')
-                fi
-                echo "New tag: $new_tag"
-                echo "new_tag=$new_tag" >> $GITHUB_ENV
-
-            - name: Create new tag
-              run: |
-                git tag "$new_tag"
-                git push origin "$new_tag"
+      - name: Create new tag
+        run: |
+          git tag "$new_tag"
+          git push origin "$new_tag"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.2.1
