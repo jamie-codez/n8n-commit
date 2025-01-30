@@ -61,7 +61,7 @@ jobs:
         with:
           config-name: .github/release-drafter.yaml
         env:
-          GITHUB_TOKEN: {{env.REGISTRY_PASSWORD}}
+          GITHUB_TOKEN: ${{env.REGISTRY_PASSWORD}}
 
       - name: Get latest tag
         id: get_latest_tag
