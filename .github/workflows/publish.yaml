@@ -5,36 +5,55 @@ on:
     branches:
       - main
 
+env:
+  GH_VERSION: ${{github.sha}}
+  REGISTRY_NAME: ghcr.io
+  REGISTRY_USER: ${{github.repository_owner}}
+  REGISTRY_PASSWORD: ${{secrets.G_TOKEN}}
+  IMAGE_NAME: n8n-commit
+  VERSION_NUMBER: ${{github.run_number}}
+  BRANCH_NAME: dev
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write
+      contents: write
+      security-events: write
+      packages: write
     steps:
-      - name: Check out the code
+      - name: Checkout Code
         uses: actions/checkout@v4.2.2
-
-      - name: Set up QEMU for multi-platform builds
-        uses: docker/setup-qemu-action@v3.3.0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.8.0
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3.3.0
+      - name: Extract metadata (tags and labels) from Docker
+        id: metadata
+        uses: docker/metadata-action@v5
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.G_TOKEN }}
-
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v6.13.0
+          labels: ${{env.IMAGE_NAME}}
+          images: ${{env.REGISTRY_NAME}}/${{env.REGISTRY_USER}}/${{env.IMAGE_NAME}}
+          tags: ${{env.GH_VERSION}}
+      - name: Login to Github container registry
+        uses: docker/login-action@v3
         with:
+          registry: ${{env.REGISTRY_NAME}}
+          username: ${{env.REGISTRY_USER}}
+          password: ${{env.REGISTRY_PASSWORD}}
+      - name: Build and Push to Registry
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          push: 'true'
           context: .
-          file: docker/Dockerfile
-          push: true
+          file: ./docker/Dockerfile
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ${{env.REGISTRY_NAME}}/${{env.REGISTRY_USER}}/${{env.IMAGE_NAME}}:latest
+            ${{env.REGISTRY_NAME}}/${{env.REGISTRY_USER}}/${{env.IMAGE_NAME}}:${{env.GH_VERSION}}
+          labels: ${{steps.metadata.outputs.labels}}
+          platforms: linux/amd64
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Account Microservice
+      - name: Output Image name
+        run: |
+          echo "Image pushed to ${{env.REGISTRY_NAME}}/${{env.REGISTRY_USER}}/${{env.IMAGE_NAME}}:${{env.GH_VERSION}}"
 
       - name: Generate release notes
         id: release_notes
