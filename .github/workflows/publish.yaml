@@ -60,6 +60,8 @@ jobs:
         uses: release-drafter/release-drafter@v6.1.0
         with:
           config-name: .github/release-drafter.yaml
+        env:
+          GITHUB_TOKEN: {{env.REGISTRY_PASSWORD}}
 
       - name: Get latest tag
         id: get_latest_tag
@@ -73,9 +75,9 @@ jobs:
           echo "Latest tag: $latest_tag"
           echo "latest_tag=$latest_tag" >> $GITHUB_ENV
           
-          - name: Increment tag
-            id: increment_tag
-            run: |
+      - name: Increment tag
+        id: increment_tag
+        run: |
               if [ "$latest_tag" == "none" ]; then
                 new_tag="v1.0.0"
               else
