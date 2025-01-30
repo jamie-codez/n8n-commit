@@ -61,11 +61,35 @@ jobs:
         with:
           config-name: .github/release-drafter.yaml
 
+      - name: Get latest tag
+        id: get_latest_tag
+        run: |
+            git fetch --tags
+            latest_tag=$(git tag --sort=-v:refname | head -n 1)
+            echo "Latest tag: $latest_tag"
+            echo "latest_tag=${latest_tag:-none}" >> $GITHUB_ENV  # Default to 'none' if no tags exist
+
+            - name: Increment tag
+              id: increment_tag
+              run: |
+                if [ "$latest_tag" == "none" ]; then
+                  new_tag="v1.0.0"
+                else
+                  new_tag=$(echo "$latest_tag" | awk -F. -v OFS=. '{$NF++;print}')
+                fi
+                echo "New tag: $new_tag"
+                echo "new_tag=$new_tag" >> $GITHUB_ENV
+
+            - name: Create new tag
+              run: |
+                git tag "$new_tag"
+                git push origin "$new_tag"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2.2.1
         with:
-          tag_name: ${{ github.ref }}
-          name: Release ${{ github.sha }}
+          tag_name: ${{ env.new_tag }}
+          name: Release ${{ env.new_tag }}
           body: ${{ steps.release_notes.outputs.release_notes }}
           draft: false
           prerelease: false
