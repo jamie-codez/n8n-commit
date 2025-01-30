@@ -2,9 +2,8 @@
 
 set -e
 
-cd /dashboards  #
+cd /home/node/.n8n  #
 
-# Check for changes
 if [[ $(git status --porcelain) ]]; then
     git add .
     git commit -m "Updated dashboards on $(date)"
