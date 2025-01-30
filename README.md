@@ -53,7 +53,7 @@ For detailed instructions on configuring Flow Sync, refer to the documentation.
 Once configured, run the script using the following command:
 
 ```bash
-    ./flow_sync.sh
+  ./flow_sync.sh
 ```
 This initiates the synchronization process and begins updating your data across connected systems.
 
